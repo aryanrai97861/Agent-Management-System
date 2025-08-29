@@ -7,6 +7,7 @@ import path from 'path';
 import { getDb } from '../config/database.js';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import stream from 'stream';
 
 const router = express.Router();
 
@@ -43,8 +44,7 @@ const upload = multer({
 const parseCSVBuffer = (buffer) => {
   return new Promise((resolve, reject) => {
     const results = [];
-    const stream = require('stream');
-    const readable = new stream.Readable();
+  const readable = new stream.Readable();
     readable._read = () => {};
     readable.push(buffer);
     readable.push(null);
