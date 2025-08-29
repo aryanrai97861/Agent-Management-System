@@ -249,25 +249,6 @@ const Dashboard = () => {
           )}
         </div>
       </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-6">Quick Actions</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group">
-            <Users className="h-8 w-8 text-gray-400 group-hover:text-blue-500 mx-auto mb-2" />
-            <p className="text-sm font-medium text-gray-700 group-hover:text-blue-700">Add New Agent</p>
-          </button>
-          <button className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors group">
-            <Upload className="h-8 w-8 text-gray-400 group-hover:text-green-500 mx-auto mb-2" />
-            <p className="text-sm font-medium text-gray-700 group-hover:text-green-700">Upload File</p>
-          </button>
-          <button className="p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors group">
-            <FileText className="h-8 w-8 text-gray-400 group-hover:text-purple-500 mx-auto mb-2" />
-            <p className="text-sm font-medium text-gray-700 group-hover:text-purple-700">View Reports</p>
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
