@@ -21,11 +21,93 @@ router.get('/', asyncHandler(async (req, res) => {
   const filter = {};
   if (status) filter.status = status;
   const agents = await db.collection('agents').find(filter).sort({ created_at: -1 }).toArray();
-  // You may need to aggregate assigned_lists count if required
+  
+  // Get assigned lists count for each agent
+  const agentsWithCounts = await Promise.all(
+    agents.map(async (agent) => {
+      const assignedCount = await db.collection('assigned_lists').countDocuments({ 
+        agent_id: agent._id 
+      });
+      return {
+        ...agent,
+        assigned_lists_count: assignedCount
+      };
+    })
+  );
+  
   res.json({
     success: true,
-    data: { agents },
-    count: agents.length
+    data: { agents: agentsWithCounts },
+    count: agentsWithCounts.length
+  });
+}));
+
+// @desc    Get assigned lists for a specific agent
+// @route   GET /api/agents/:id/assigned-lists
+// @access  Private (Admin only)
+router.get('/:id/assigned-lists', asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { page = 1, limit = 10 } = req.query;
+  
+  const db = getDb();
+  
+  // Validate ObjectId format
+  if (!ObjectId.isValid(id)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid agent ID format'
+    });
+  }
+  
+  // Check if agent exists
+  const agent = await db.collection('agents').findOne({ _id: new ObjectId(id) });
+  if (!agent) {
+    return res.status(404).json({
+      success: false,
+      message: 'Agent not found'
+    });
+  }
+
+  // Get assigned lists with pagination
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+  const assignedLists = await db.collection('assigned_lists')
+    .find({ agent_id: new ObjectId(id) })
+    .sort({ created_at: -1 })
+    .skip(skip)
+    .limit(parseInt(limit))
+    .toArray();
+
+  // Get total count
+  const totalCount = await db.collection('assigned_lists').countDocuments({ agent_id: new ObjectId(id) });
+
+  // Get upload info for each assigned list
+  const listsWithUploadInfo = await Promise.all(
+    assignedLists.map(async (list) => {
+      const upload = await db.collection('uploads').findOne({ _id: list.upload_id });
+      return {
+        ...list,
+        upload_filename: upload?.filename || 'Unknown',
+        upload_date: upload?.created_at || list.created_at
+      };
+    })
+  );
+
+  res.json({
+    success: true,
+    data: {
+      agent: {
+        id: agent._id,
+        name: agent.name,
+        email: agent.email
+      },
+      assigned_lists: listsWithUploadInfo,
+      pagination: {
+        current_page: parseInt(page),
+        total_pages: Math.ceil(totalCount / parseInt(limit)),
+        total_count: totalCount,
+        per_page: parseInt(limit)
+      }
+    }
   });
 }));
 // @desc    Get single agent

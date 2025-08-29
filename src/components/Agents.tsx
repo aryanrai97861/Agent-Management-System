@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Search, Phone, Mail, User, Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Edit, Trash2, Search, Phone, Mail, User, Eye, EyeOff, List } from 'lucide-react';
 
 interface Agent {
   id?: string;
@@ -11,9 +12,11 @@ interface Agent {
   status: 'active' | 'inactive';
   created_at: string;
   updated_at: string;
+  assigned_lists_count?: number;
 }
 
 const Agents = () => {
+  const navigate = useNavigate();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -270,6 +273,9 @@ const Agents = () => {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Assigned Lists
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -320,20 +326,36 @@ const Agents = () => {
                         </button>
                       </div>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <div className="flex items-center">
+                        <List className="h-4 w-4 mr-2 text-gray-400" />
+                        <span className="font-medium">{agent.assigned_lists_count || 0}</span>
+                        <span className="ml-1 text-gray-500">records</span>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(agent.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">
                         <button
+                          onClick={() => navigate(`/agents/${agent.id}/lists`)}
+                          className="text-green-600 hover:text-green-900 p-1 hover:bg-green-50 rounded"
+                          title="View Assigned Lists"
+                        >
+                          <List className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => openEditModal(agent)}
                           className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded"
+                          title="Edit Agent"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleDelete(agent.id!)}
                           className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded"
+                          title="Delete Agent"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>

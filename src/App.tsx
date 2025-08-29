@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Agents from './components/Agents';
+import AgentLists from './components/AgentLists';
 import Upload from './components/Upload';
 import Layout from './components/Layout';
 import './App.css';
@@ -46,6 +47,16 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <Agents />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/agents/:id/lists"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <AgentLists />
                   </Layout>
                 </ProtectedRoute>
               }

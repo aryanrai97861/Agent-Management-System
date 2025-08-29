@@ -14,6 +14,8 @@ A comprehensive application for managing sales agents and distributing leads fro
 - Agent profile management with contact details
 - Status tracking (active/inactive)
 - Mobile number with country code support
+- **View assigned lists for each agent**
+- **Track distribution counts and assignment history**
 
 ### 📤 File Upload & Distribution
 - Upload CSV, XLS, and XLSX files
@@ -262,8 +264,9 @@ After seeding your database, you can explore the data structure in MongoDB Compa
 - `GET /api/auth/profile` - Get current user profile
 
 ### Agents
-- `GET /api/agents` - Get all agents
+- `GET /api/agents` - Get all agents (includes assigned lists count)
 - `GET /api/agents/:id` - Get single agent
+- `GET /api/agents/:id/assigned-lists` - Get assigned lists for specific agent (paginated)
 - `POST /api/agents` - Create new agent
 - `PUT /api/agents/:id` - Update agent
 - `DELETE /api/agents/:id` - Delete agent
@@ -285,9 +288,14 @@ After seeding your database, you can explore the data structure in MongoDB Compa
 2. **Add New Agent**: Click "Add Agent" button
    - Fill in: Name, Email, Mobile (with country code), Password
    - Agent will be created with "active" status
-3. **Edit Agent**: Click edit icon to modify agent details
-4. **Toggle Status**: Click "Set active/inactive" to change agent status
-5. **Delete Agent**: Click delete icon (with confirmation)
+3. **View Assigned Lists**: Click the green list icon to see all records assigned to that agent
+   - View contact details, phone numbers, and notes
+   - Filter by status (pending, contacted, completed)
+   - Search through assigned records
+   - Paginated view for large datasets
+4. **Edit Agent**: Click edit icon to modify agent details
+5. **Toggle Status**: Click "Set active/inactive" to change agent status
+6. **Delete Agent**: Click delete icon (with confirmation)
 
 ### 3. Upload and Distribute Files
 1. Click "Upload & Distribute" in the sidebar
