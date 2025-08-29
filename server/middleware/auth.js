@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { getDb } from '../config/database.js';
+import { ObjectId } from 'mongodb';
 import asyncHandler from 'express-async-handler';
 
 // Middleware to verify JWT token
