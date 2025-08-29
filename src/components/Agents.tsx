@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, Phone, Mail, User, Eye, EyeOff } from 'lucide-react';
 
 interface Agent {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
   email: string;
   mobile: string;
@@ -45,8 +46,10 @@ const Agents = () => {
         throw new Error('Failed to fetch agents');
       }
 
-      const data = await response.json();
-      setAgents(data.data.agents);
+  const data = await response.json();
+  // Normalize agents so each has an `id` (use _id from MongoDB when present)
+  const normalized = data.data.agents.map((a: any) => ({ ...a, id: a.id ?? a._id }));
+  setAgents(normalized);
     } catch (error: any) {
       setError(error.message);
     } finally {
@@ -92,7 +95,7 @@ const Agents = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/agents/${id}`, {
+  const response = await fetch(`/api/agents/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -122,7 +125,8 @@ const Agents = () => {
   };
 
   const openEditModal = (agent: Agent) => {
-    setEditingAgent(agent);
+  // Ensure editingAgent has `id` field
+  setEditingAgent({ ...agent, id: agent.id ?? agent._id });
     setFormData({
       name: agent.name,
       email: agent.email,
@@ -149,6 +153,42 @@ const Agents = () => {
       ...prev,
       [name]: value,
     }));
+  };
+
+  const toggleStatus = async (agent: Agent) => {
+    const id = agent.id ?? agent._id;
+    if (!id) return setError('Agent id missing');
+
+    const newStatus = agent.status === 'active' ? 'inactive' : 'active';
+
+    // optimistic update
+    setAgents(prev => prev.map(a => ( (a.id === agent.id || a._id === agent._id) ? { ...a, status: newStatus } : a )));
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/agents/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ message: 'Failed to update status' }));
+        throw new Error(err.message || 'Failed to update status');
+      }
+
+      const data = await res.json();
+      const updated = data.data.agent;
+      // merge server response
+      setAgents(prev => prev.map(a => ( (a.id === agent.id || a._id === agent._id) ? { ...a, ...updated, id: updated.id ?? updated._id } : a )));
+    } catch (e: any) {
+      setError(e.message || 'Failed to update agent status');
+      // rollback optimistic
+      setAgents(prev => prev.map(a => ( (a.id === agent.id || a._id === agent._id) ? { ...a, status: agent.status } : a )));
+    }
   };
 
   if (loading && agents.length === 0) {
@@ -264,13 +304,21 @@ const Agents = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        agent.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {agent.status}
-                      </span>
+                      <div className="flex items-center space-x-3">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          agent.status === 'active' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {agent.status}
+                        </span>
+                        <button
+                          onClick={() => toggleStatus(agent)}
+                          className="text-sm text-gray-600 hover:text-gray-900 px-2 py-1 border rounded"
+                        >
+                          {agent.status === 'active' ? 'Set inactive' : 'Set active'}
+                        </button>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(agent.created_at).toLocaleDateString()}
@@ -284,7 +332,7 @@ const Agents = () => {
                           <Edit className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => handleDelete(agent.id)}
+                          onClick={() => handleDelete(agent.id!)}
                           className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded"
                         >
                           <Trash2 className="h-4 w-4" />

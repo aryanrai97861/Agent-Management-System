@@ -1,6 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import { getDb } from '../config/database.js';
+import { ObjectId } from 'mongodb';
 import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
@@ -15,7 +16,11 @@ router.use(requireAdmin);
 // @access  Private (Admin only)
 router.get('/', asyncHandler(async (req, res) => {
   const db = getDb();
-  const agents = await db.collection('agents').find({}).sort({ created_at: -1 }).toArray();
+  // Optional query param to filter by status, e.g. /api/agents?status=active
+  const { status } = req.query;
+  const filter = {};
+  if (status) filter.status = status;
+  const agents = await db.collection('agents').find(filter).sort({ created_at: -1 }).toArray();
   // You may need to aggregate assigned_lists count if required
   res.json({
     success: true,
@@ -29,7 +34,7 @@ router.get('/', asyncHandler(async (req, res) => {
 router.get('/:id', asyncHandler(async (req, res) => {
   const { id } = req.params;
   const db = getDb();
-  const agent = await db.collection('agents').findOne({ _id: id });
+  const agent = await db.collection('agents').findOne({ _id: new ObjectId(id) });
   if (!agent) {
     return res.status(404).json({
       success: false,
@@ -103,6 +108,7 @@ router.post('/', asyncHandler(async (req, res) => {
     mobile,
     country_code: countryCode || '+1',
     password: hashedPassword,
+    status: req.body.status || 'active',
     created_by: req.user.id,
     created_at: new Date().toISOString()
   };
@@ -120,12 +126,17 @@ router.post('/', asyncHandler(async (req, res) => {
 // @route   PUT /api/agents/:id
 // @access  Private (Admin only)
 router.put('/:id', asyncHandler(async (req, res) => {
+  console.log('=== PUT /api/agents/:id called ===');
+  console.log('Agent ID:', req.params.id);
+  console.log('Request body:', req.body);
+  console.log('User from token:', req.user?.email);
+  
   const { id } = req.params;
-  const { name, email, mobile, countryCode, password } = req.body;
+  const { name, email, mobile, countryCode, password, status } = req.body;
 
   // Check if agent exists
   const db = getDb();
-  const existingAgent = await db.collection('agents').findOne({ _id: id });
+  const existingAgent = await db.collection('agents').findOne({ _id: new ObjectId(id) });
   if (!existingAgent) {
     return res.status(404).json({
       success: false,
@@ -160,6 +171,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
     updateData.mobile = mobile;
   }
   if (countryCode) updateData.country_code = countryCode;
+  if (status) updateData.status = status;
   
   // Hash password if provided
   if (password) {
@@ -176,8 +188,8 @@ router.put('/:id', asyncHandler(async (req, res) => {
   updateData.updated_at = new Date().toISOString();
 
   // Update agent
-  await db.collection('agents').updateOne({ _id: id }, { $set: updateData });
-  const updatedAgent = await db.collection('agents').findOne({ _id: id });
+  await db.collection('agents').updateOne({ _id: new ObjectId(id) }, { $set: updateData });
+  const updatedAgent = await db.collection('agents').findOne({ _id: new ObjectId(id) });
   const { password: _, ...agentData } = updatedAgent;
   res.json({
     success: true,
@@ -194,7 +206,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
 
   // Check if agent exists
   const db = getDb();
-  const agent = await db.collection('agents').findOne({ _id: id });
+  const agent = await db.collection('agents').findOne({ _id: new ObjectId(id) });
   if (!agent) {
     return res.status(404).json({
       success: false,
@@ -203,7 +215,7 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   }
 
   // Delete agent (this will cascade to assigned_lists due to foreign key)
-  await db.collection('agents').deleteOne({ _id: id });
+  await db.collection('agents').deleteOne({ _id: new ObjectId(id) });
   res.json({
     success: true,
     message: 'Agent deleted successfully'
